@@ -1,3 +1,5 @@
+![CryptoDataDownloader](https://github.com/user-attachments/assets/0973edbe-0cdb-4349-aec2-553d5ed0211f)
+
 # Crypto Data Downloader
 
 Crypto Data Downloader is an application that provides a streamlined interface for downloading and visualizing cryptocurrency data. Designed with a user-friendly frontend using Streamlit and candlestick charting through Lightweight Charts, this tool is ideal at providing data for machine learning, and trading analysis. The app currently supports Bybit and Binance exchanges and allows flexible selection of timeframes, trading pairs, and date ranges.
