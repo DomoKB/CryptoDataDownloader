@@ -7,7 +7,7 @@ class DataSaverStrategy(ABC):
     def save(self, data: pd.DataFrame, filename: str):
         pass
 
-class CsvSaver:
+class CsvSaver(DataSaverStrategy):
     def save(self, data: pd.DataFrame, filename: str):
         try:
             data.to_csv(filename, index=False)

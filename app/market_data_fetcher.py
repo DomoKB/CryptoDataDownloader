@@ -1,19 +1,14 @@
-import re
 import pandas as pd
 import streamlit as st
-from datetime import datetime, timedelta, timezone
-from dateutil.relativedelta import relativedelta
-from zoneinfo import ZoneInfo
+from datetime import datetime
 
 class MarketDataFetcher:
-    def __init__(self, exchange):
-        try:
-            self.exchange = exchange
-        except Exception as e:
-            st.error(f"An error occurred while initializing the MarketDataFetcher: {e}")
+    def __init__(self, exchange, delta_calculator):
+        self.exchange = exchange
+        self.delta_calculator = delta_calculator
 
     def fetch_ohlcv(self, symbol: str, timeframe: str, limit: int, selected_datetime: datetime,
-                    local_tz: ZoneInfo, market_type: str) -> pd.DataFrame:
+                    local_tz, market_type: str) -> pd.DataFrame:
         try:
             if not hasattr(self.exchange, 'fetchOHLCV'):
                 raise NotImplementedError(
@@ -21,7 +16,7 @@ class MarketDataFetcher:
                 )
 
             # Always use "before date" calculations
-            delta = self.calculate_delta(timeframe, limit - 1)
+            delta = self.delta_calculator.calculate_delta(timeframe, limit - 1)
             adjusted_date = selected_datetime - delta
             since = int(adjusted_date.timestamp() * 1000)
 
@@ -58,32 +53,3 @@ class MarketDataFetcher:
         except Exception as e:
             st.error(f"An error occurred while fetching OHLCV data: {e}")
             return pd.DataFrame()
-
-    def calculate_delta(self, timeframe: str, limit: int):
-        try:
-            match = re.fullmatch(r'(\d+)([mhdwM])', timeframe)
-            if not match:
-                raise ValueError(f"Invalid timeframe format: '{timeframe}'. Expected formats like '1m', '2h', '1M', etc.")
-
-            amount_str, unit = match.groups()
-            amount = int(amount_str)
-            total_amount = amount * limit
-
-            if unit == 'm':
-                return timedelta(minutes=total_amount)
-            elif unit == 'h':
-                return timedelta(hours=total_amount)
-            elif unit == 'd':
-                return timedelta(days=total_amount)
-            elif unit == 'w':
-                return timedelta(weeks=total_amount)
-            elif unit == 'M':
-                return relativedelta(months=total_amount)
-            else:
-                raise ValueError(f"Unsupported timeframe unit: '{unit}'. Supported units are m, h, d, w, M.")
-        except ValueError as e:
-            st.error(f"An error occurred while calculating delta: {e}")
-            return timedelta(0)
-        except Exception as e:
-            st.error(f"An error occurred during delta calculation: {e}")
-            return timedelta(0)

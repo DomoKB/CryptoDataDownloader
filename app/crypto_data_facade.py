@@ -1,15 +1,13 @@
 from app.market_data_fetcher import MarketDataFetcher
-from app.indicator_calculator import IndicatorCalculator
+from app.indicators import IndicatorRegistry
+from app.data_saver import DataSaverStrategy
 import streamlit as st
 import pandas as pd
 
 class CryptoDataFacade:
-    def __init__(self, exchange):
-        try:
-            self.exchange = exchange
-            self.fetcher = MarketDataFetcher(self.exchange)
-        except Exception as e:
-            st.error(f"An error occurred while initializing the CryptoDataFacade: {e}")
+    def __init__(self, fetcher: MarketDataFetcher, indicator_registry: IndicatorRegistry):
+        self.fetcher = fetcher
+        self.indicator_registry = indicator_registry
 
     def fetch_data(self, symbol: str, timeframe: str, limit: int, selected_datetime, local_tz, market_type: str):
         try:
@@ -24,23 +22,17 @@ class CryptoDataFacade:
         except Exception as e:
             st.error(f"An error occurred while fetching OHLCV data: {e}")
 
-    def calculate_indicator(self, indicator_name: str, data: pd.DataFrame, **kwargs) -> pd.DataFrame:
-        # Calculate indicators based on hardcoded allowed indicators
+    def calculate_indicator(self, indicator_name: str, data: pd.DataFrame) -> pd.DataFrame:
         try:
             if data.empty:
                 return pd.DataFrame()
-            if indicator_name == 'ema':
-                return IndicatorCalculator.calculate_ema(data, kwargs.get('length', 10))
-            elif indicator_name == 'macd':
-                return IndicatorCalculator.calculate_macd(
-                    data, kwargs.get('fast', 12), kwargs.get('slow', 26), kwargs.get('signal', 9)
-                )
-            else:
-                raise ValueError(f"Indicator '{indicator_name}' is not supported.")
+            indicator = self.indicator_registry.get(indicator_name)
+            return indicator.calculate(data)
         except Exception as e:
             st.error(f"An error occurred while calculating the {indicator_name} indicator: {e}")
+            return pd.DataFrame()
 
-    def save_data(self, data: pd.DataFrame, saver_strategy, filename: str):
+    def save_data(self, data: pd.DataFrame, saver_strategy: DataSaverStrategy, filename: str):
         try:
             saver_strategy.save(data, filename)
         except Exception as e:
